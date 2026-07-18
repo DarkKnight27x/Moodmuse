@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 spotipy
 pydantic
+pydantic-settings
 python-dotenv
 pymongo
 motor
