@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+spotipy
+pydantic
+python-dotenv
+pymongo
+motor
