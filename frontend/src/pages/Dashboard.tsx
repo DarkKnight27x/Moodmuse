@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Play, Shuffle, Sparkles, Flame, Compass, Clock } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { dailyMixTracks, madeForYou } from '../lib/mockData'
+import MoodQuiz from '../components/MoodQuiz'
 
 const getGreeting = () => {
   const h = new Date().getHours()
@@ -103,6 +104,11 @@ export default function Dashboard() {
             </motion.button>
           </div>
         </div>
+      </motion.div>
+
+      {/* mood quiz widget */}
+      <motion.div variants={item}>
+        <MoodQuiz />
       </motion.div>
 
       {/* stat strip */}

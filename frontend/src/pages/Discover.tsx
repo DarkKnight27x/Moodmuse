@@ -3,11 +3,7 @@ import { motion } from 'framer-motion'
 import { Search, Play, Sparkles } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { moodPlaylists, dailyMixTracks } from '../lib/mockData'
-import { spotifyApi } from '../lib/spotify';
-const handleSearch = async () => {
-  const results = await spotifyApi.search(query);
-  console.log(results);
-};
+
 const filters = ['All', 'Energetic', 'Chill', 'Focus', 'Melancholy', 'Nostalgic', 'Euphoric']
 
 export default function Discover() {
