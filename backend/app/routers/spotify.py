@@ -4,7 +4,7 @@ from ..utils.spotify import search_songs, get_recommendations
 router = APIRouter(prefix="/spotify", tags=["spotify"])
 
 @router.get("/search")
-async def search(query: str, limit: int = 10):
+async def search_songs(query: str, limit: int = 10):
     results = search_songs(query, limit)
     return {"results": results}
 

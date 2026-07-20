@@ -1,5 +1,6 @@
 from transformers import pipeline
 from typing import List, Dict
+from ..utils.spotify import search_songs as spotify_search
 
 sentiment = pipeline("sentiment-analysis")
 
@@ -13,6 +14,5 @@ def analyze_mood_advanced(text: str) -> Dict:
 def generate_playlist_ml(languages: List[str], artists: List[str], mood_text: str) -> List[Dict]:
     mood = analyze_mood_advanced(mood_text)
     query = f"{mood['mood']} { ' '.join(artists[:3]) } { ' '.join(languages[:2]) }"
-    # Spotify API call
-    results = spotify_search(query, limit=20)
+    results = spotify_search(query, limit=10)
     return results
