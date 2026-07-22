@@ -6,7 +6,7 @@ router = APIRouter(prefix="/spotify", tags=["spotify"])
 @router.get("/search")
 def search_songs(query: str, limit: int = 10):
     try:
-        results = spotify.search(q=query, type='track', limit=limit, timeout=10)
+        results = spotify.search(q=query, type='track', limit=limit, timeout=50)
         return results['tracks']['items']
     except:
         return []
