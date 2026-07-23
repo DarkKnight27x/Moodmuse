@@ -1,13 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware   # ← ADD THIS
 
 # Create the FastAPI app
 app = FastAPI(title="MoodMuse API", version="1.0")
 
+# ← ADD THIS BLOCK (Session Middleware)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="moodmuse-super-secret-key-change-me-in-production"
+)
+
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],   # Your frontend URL
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,6 +38,7 @@ app.include_router(mood_router)
 app.include_router(therapist_router)
 app.include_router(playlist_router)
 app.include_router(quiz_router, prefix="/quiz", tags=["Quiz"])
+
 # ====================== ROOT & HEALTH ======================
 @app.get("/")
 async def root():
@@ -39,7 +47,6 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
-
 
 # ====================== RUN (for local testing) ======================
 if __name__ == "__main__":

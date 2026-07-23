@@ -326,26 +326,7 @@ function generateFallbackPlaylist(payload: QuizPayload): QuizResult {
   return { name, description, tracks }
 }
 
-// Adapts whatever shape the backend returns into QuizResult.
-function parseBackendResponse(data: any): QuizResult {
-  const name = data?.playlist_name ?? data?.name ?? 'Your Custom Mix'
-  const description = data?.description ?? 'A playlist tuned to your answers.'
-  const rawTracks: any[] = data?.tracks ?? []
 
-  const tracks: Track[] = rawTracks.map((t: any, i: number) => ({
-    id: t.id ?? `backend-${i}`,
-    title: t.name ?? t.title ?? `Track ${i + 1}`,
-    artist: t.artist ?? 'Unknown Artist',
-    cover: t.image ?? t.cover ?? resultCovers[i % resultCovers.length],
-    duration: t.duration ?? 210,
-    color: i % 2 === 0 ? '#a855f7' : '#22d3ee',
-    spotify_url: t.spotify_url ?? null, // optional extra field
-  }))
-
-  if (!tracks.length) throw new Error('Backend returned no tracks')
-
-  return { name, description, tracks }
-}
 
 async function ensureMinDelay(start: number, minMs: number) {
   const elapsed = Date.now() - start
@@ -466,24 +447,30 @@ export default function MoodQuiz() {
     if (stage === 'language') return setStage('idle')
   }
 
-  const submit = async () => {
-    setStage('loading')
-    const payload: QuizPayload = { languages, artists, answers, notes }
-    const start = Date.now()
-    try {
-    const res = await api.post('/quiz/recommend', payload)      
+const submit = async () => {
+  setStage('loading')
+  const payload = { languages, artists, answers, notes }
+  const start = Date.now()
+  try {
+    const res = await api.post('/assessment/submit', {
+      languages,
+      favorite_artists: artists,
+      mood: answers.feeling || 'balanced'
+    }, {
+      params: { mood_text: notes || Object.values(answers).join(' '), preference: 'popular' }
+    })
     const parsed = parseBackendResponse(res.data)
-      await ensureMinDelay(start, 1200)
-      setResult(parsed)
-      setUsedFallback(false)
-    } catch (err) {
-      console.warn('[MoodQuiz] backend unreachable, using local preview data:', err)
-      await ensureMinDelay(start, 1200)
-      setResult(generateFallbackPlaylist(payload))
-      setUsedFallback(true)
-    }
-    setStage('results')
+    await ensureMinDelay(start, 1200)
+    setResult(parsed)
+    setUsedFallback(false)
+  } catch (err) {
+    console.warn('[MoodQuiz] backend unreachable, using local preview data:', err)
+    await ensureMinDelay(start, 1200)
+    setResult(generateFallbackPlaylist(payload))
+    setUsedFallback(true)
   }
+  setStage('results')
+}
 
   return (
     <motion.div
@@ -744,9 +731,10 @@ export default function MoodQuiz() {
                     <p className="truncate text-sm font-medium text-ink">{t.title}</p>
                     <p className="truncate text-xs text-fog">{t.artist}</p>
                   </div>
-                  <span className="shrink-0 font-mono text-xs text-fog">
-                    {Math.floor(t.duration / 60)}:{(t.duration % 60).toString().padStart(2, '0')}
-                  </span>
+                <span className="shrink-0 font-mono text-xs text-fog">
+                    {Math.floor(t.duration / 60000)}:{(Math.floor(t.duration / 1000) % 60).toString().padStart(2, '0')}
+                </span>  
+                  
                 </motion.div>
               ))}
             </div>
@@ -856,4 +844,22 @@ function ContinueButton({ disabled, onClick }: { disabled: boolean; onClick: () 
       Continue
     </motion.button>
   )
+}
+// Adapts whatever shape the backend returns into QuizResult.
+function parseBackendResponse(data: any): QuizResult {
+  const playlist = data.playlist || data
+  const name = playlist.name || data.name || 'Your Custom Mix'
+  const description = data.message || playlist.description || 'Advanced ML playlist ready!'
+  const rawTracks = playlist || []
+
+  const tracks: Track[] = rawTracks.map((t: any, i: number) => ({
+    id: t.id ?? `backend-${i}`,
+    title: t.name ?? t.title ?? `Track ${i + 1}`,
+    artist: t.artists?.[0]?.name ?? t.artist ?? 'Unknown Artist',
+    cover: t.album?.images?.[0]?.url ?? t.cover ?? resultCovers[i % resultCovers.length],
+    duration: t.duration_ms ?? t.duration ?? 210,
+    color: i % 2 === 0 ? '#a855f7' : '#22d3ee',
+  }))
+
+  return { name, description, tracks }
 }

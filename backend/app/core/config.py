@@ -11,5 +11,13 @@ class Settings(BaseSettings):
     
     SPOTIFY_CLIENT_ID: str
     SPOTIFY_CLIENT_SECRET: str
+    SPOTIFY_REDIRECT_URI: str = "http://localhost:8000/auth/spotify/callback"
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    # Allow extra fields from .env without crashing
+    model_config = {
+        "env_file": ".env",
+        "extra": "ignore"
+    }
 
 settings = Settings()
