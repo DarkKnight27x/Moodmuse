@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -39,6 +39,8 @@ import {
   BookmarkCheck,
   Loader2,
   WifiOff,
+  ExternalLink,
+  Link2,
 } from 'lucide-react'
 import { useStore, type Track } from '../store/useStore'
 import api from '../lib/api'
@@ -277,6 +279,7 @@ interface QuizResult {
   name: string
   description: string
   tracks: Track[]
+  spotifyLink: string | null
 }
 
 const resultCovers = [
@@ -323,7 +326,7 @@ function generateFallbackPlaylist(payload: QuizPayload): QuizResult {
     color: i % 2 === 0 ? '#a855f7' : '#22d3ee',
   }))
 
-  return { name, description, tracks }
+  return { name, description, tracks, spotifyLink: null }
 }
 
 
@@ -399,7 +402,32 @@ export default function MoodQuiz() {
   const [saved, setSaved] = useState(false)
   const [result, setResult] = useState<QuizResult | null>(null)
   const [usedFallback, setUsedFallback] = useState(false)
+  const [spotifyConnected, setSpotifyConnected] = useState(false)
   const playTrack = useStore((s) => s.playTrack)
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .get('/auth/spotify/status')
+      .then((res) => {
+        if (!cancelled) setSpotifyConnected(Boolean(res.data?.connected))
+      })
+      .catch(() => {
+        // backend unreachable or endpoint not deployed yet — just stay
+        // "not connected", the quiz itself still works either way
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const connectSpotify = () => {
+    // Full page navigation on purpose — this has to leave the SPA for the
+    // OAuth redirect dance to work, a fetch() call can't do this.
+    // Hardcoded to the local backend for now; swap for an env var
+    // (e.g. import.meta.env.VITE_API_URL) once this moves past local dev.
+    window.location.href = 'http://localhost:8000/auth/spotify/login'
+  }
 
   const totalSteps = 2 + moodQuestions.length
   const overallIndex =
@@ -511,6 +539,21 @@ const submit = async () => {
               <Sparkles className="h-4 w-4" />
               Take the Quiz
             </motion.button>
+
+            {spotifyConnected ? (
+              <span className="flex items-center gap-1.5 text-xs text-fog">
+                <Link2 className="h-3.5 w-3.5 text-cyan-bright" />
+                Spotify connected — playlists will save to your account
+              </span>
+            ) : (
+              <button
+                onClick={connectSpotify}
+                className="flex items-center gap-1.5 text-xs text-fog underline decoration-dotted underline-offset-4 transition-colors hover:text-mist"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                Connect Spotify to save playlists to your account
+              </button>
+            )}
           </motion.div>
         )}
 
@@ -770,6 +813,30 @@ const submit = async () => {
               </motion.button>
             </div>
 
+            {result.spotifyLink && (
+              <motion.a
+                href={result.spotifyLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#1DB954] px-6 py-4 text-sm font-semibold text-black shadow-[0_0_28px_rgba(29,185,84,0.4)]"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open in Spotify
+              </motion.a>
+            )}
+
+            {!result.spotifyLink && !usedFallback && (
+              <p className="mt-4 text-center text-xs text-fog">
+                {spotifyConnected
+                  ? "Couldn't save this one to Spotify — you can still play it above."
+                  : 'Connect Spotify from the start screen to save playlists like this one.'}
+              </p>
+            )}
+
             <button
               onClick={startQuiz}
               className="mt-5 text-xs font-medium text-fog transition-colors hover:text-mist"
@@ -861,5 +928,11 @@ function parseBackendResponse(data: any): QuizResult {
     color: i % 2 === 0 ? '#a855f7' : '#22d3ee',
   }))
 
-  return { name, description, tracks }
+  // Backend returns null when playlist creation wasn't possible (no
+  // connected Spotify account, or the Spotify API call itself failed) —
+  // the tracks above are still valid either way, only the "Open in
+  // Spotify" button's visibility depends on this being non-null.
+  const spotifyLink: string | null = data.spotify_link ?? null
+
+  return { name, description, tracks, spotifyLink }
 }
