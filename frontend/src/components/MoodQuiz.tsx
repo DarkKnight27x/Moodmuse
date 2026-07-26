@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -44,6 +44,7 @@ import {
 } from 'lucide-react'
 import { useStore, type Track } from '../store/useStore'
 import api from '../lib/api'
+import { useSpotifyAuth } from '../context/SpotifyAuthContext'
 
 // ============================================================
 // static data
@@ -402,32 +403,13 @@ export default function MoodQuiz() {
   const [saved, setSaved] = useState(false)
   const [result, setResult] = useState<QuizResult | null>(null)
   const [usedFallback, setUsedFallback] = useState(false)
-  const [spotifyConnected, setSpotifyConnected] = useState(false)
   const playTrack = useStore((s) => s.playTrack)
 
-  useEffect(() => {
-    let cancelled = false
-    api
-      .get('/auth/spotify/status')
-      .then((res) => {
-        if (!cancelled) setSpotifyConnected(Boolean(res.data?.connected))
-      })
-      .catch(() => {
-        // backend unreachable or endpoint not deployed yet — just stay
-        // "not connected", the quiz itself still works either way
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const connectSpotify = () => {
-    // Full page navigation on purpose — this has to leave the SPA for the
-    // OAuth redirect dance to work, a fetch() call can't do this.
-    // Hardcoded to the local backend for now; swap for an env var
-    // (e.g. import.meta.env.VITE_API_URL) once this moves past local dev.
-    window.location.href = 'http://localhost:8000/auth/spotify/login'
-  }
+  // Shared across the whole app (see SpotifyAuthContext) rather than each
+  // component fetching /auth/spotify/status independently — this is also
+  // what keeps the Login page and this widget from ever disagreeing about
+  // connection state.
+  const { connected: spotifyConnected, connectSpotify } = useSpotifyAuth()
 
   const totalSteps = 2 + moodQuestions.length
   const overallIndex =
@@ -830,11 +812,24 @@ const submit = async () => {
             )}
 
             {!result.spotifyLink && !usedFallback && (
-              <p className="mt-4 text-center text-xs text-fog">
-                {spotifyConnected
-                  ? "Couldn't save this one to Spotify — you can still play it above."
-                  : 'Connect Spotify from the start screen to save playlists like this one.'}
-              </p>
+              <div className="mt-4 flex flex-col items-center gap-2.5 text-center">
+                <p className="text-xs text-fog">
+                  {spotifyConnected
+                    ? "Couldn't save this one to Spotify — you can still play it above."
+                    : "Connect Spotify to save playlists like this one to your account."}
+                </p>
+                {!spotifyConnected && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={connectSpotify}
+                    className="flex items-center gap-2 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/10 px-5 py-2.5 text-xs font-semibold text-[#1DB954]"
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                    Connect Spotify
+                  </motion.button>
+                )}
+              </div>
             )}
 
             <button
