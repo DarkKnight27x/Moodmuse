@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "super-secret-key-change-in-prod"
     SESSION_SECRET_KEY: str = "super-secret-key-change-in-prod"
     ALGORITHM: str = "HS256"
-    
+
     SPOTIFY_CLIENT_ID: str
     SPOTIFY_CLIENT_SECRET: str
     SPOTIFY_REDIRECT_URI: str = "http://127.0.0.1:8000/auth/spotify/callback"

@@ -11,6 +11,7 @@ import MoodCheckInPage from './pages/MoodCheckIn'
 import Reports from './pages/Reports'
 import Compatibility from './pages/Compatibility'
 import Settings from './pages/Settings'
+import Login from './pages/Login'
 import { useStore } from './store/useStore'
 import { dailyMixTracks } from './lib/mockData'
 
@@ -40,7 +41,7 @@ function AnimatedRoutes() {
   )
 }
 
-function App() {
+function MainApp() {
   useEffect(() => {
     const state = useStore.getState()
     if (!state.currentTrack) {
@@ -50,16 +51,28 @@ function App() {
   }, [])
 
   return (
+    <div className="bg-lab min-h-screen">
+      <Sidebar />
+      <main className="min-h-screen px-4 pb-32 pt-20 md:ml-64 md:px-8 md:pb-28 md:pt-8 lg:px-10">
+        <div className="mx-auto max-w-6xl">
+          <AnimatedRoutes />
+        </div>
+      </main>
+      <BottomPlayer />
+    </div>
+  )
+}
+
+function App() {
+  return (
     <BrowserRouter>
-      <div className="bg-lab min-h-screen">
-        <Sidebar />
-        <main className="min-h-screen px-4 pb-32 pt-20 md:ml-64 md:px-8 md:pb-28 md:pt-8 lg:px-10">
-          <div className="mx-auto max-w-6xl">
-            <AnimatedRoutes />
-          </div>
-        </main>
-        <BottomPlayer />
-      </div>
+      <Routes>
+        {/* Full-page login — no sidebar */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Everything else — with sidebar + player */}
+        <Route path="/*" element={<MainApp />} />
+      </Routes>
     </BrowserRouter>
   )
 }

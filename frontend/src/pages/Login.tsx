@@ -13,8 +13,6 @@ export default function Login() {
   }
 
   const handleContinue = () => {
-    // already connected (e.g. returning visitor with a live session) —
-    // no need to round-trip through Spotify again
     navigate('/')
   }
 
